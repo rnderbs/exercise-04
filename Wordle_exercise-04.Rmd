@@ -1,0 +1,128 @@
+---
+title: "wordle_exercise"
+author: "Riley N Derby"
+date: "2024-02-12"
+output:
+  pdf_document: default
+  html_document: default
+---
+okay so we set up the repo and now can get going 
+
+
+lets take a peek at these files
+```{r}
+library(tidyverse)
+library(dplyr)
+
+c <- read_tsv("C:\\Users\\rnder\\OneDrive\\Desktop\\Repos\\exercise-04\\collins-scrabble-words-2019.txt")
+
+g <- read_tsv("C:\\Users\\rnder\\OneDrive\\Desktop\\Repos\\exercise-04\\google-10000-english-usa-no-swears.txt")
+```
+
+
+step 1 : lets set up load_dictionary function
+```{r}
+load_dictionary <- function(filename){
+  library(readr)
+  f <- filename
+  d <- read_tsv(f, col_names = T)
+    return(d$words)
+}
+
+valid_list <- load_dictionary("C:\\Users\\rnder\\OneDrive\\Desktop\\Repos\\exercise-04\\collins-scrabble-words-2019.txt")
+
+
+solution_list <- load_dictionary("C:\\Users\\rnder\\OneDrive\\Desktop\\Repos\\exercise-04\\google-10000-english-usa-no-swears.txt")
+  
+
+str(valid_list) # 279496 words
+str(solution_list)# 9884 words
+```
+
+
+step 2: winnow down solution list
+```{r}
+solution_list1 <- intersect(valid_list, solution_list)
+## results in list being brought down to 8336 words
+```
+
+
+step 3: pick solution function to limit to 5 letter words
+```{r}
+
+pick_solution <- function(solution_list1, word_length = 5){
+  s_length <- as.data.frame(solution_list1)
+  names(s_length) <- c("word")
+  s_length <- dplyr::filter(s_length,nchar(word) == word_length)
+  word <- dplyr::sample_n(s_length, size = 1)
+  word <- word$word %>%
+    strsplit(word, split = "")
+  word <- word[[1]]
+  return(word)
+}
+
+solution <- pick_solution(solution_list, word_length = 5)
+```
+
+step 4: lets play wordle
+```{r}
+evaluate_guess <- function(guess, solution){
+        library(sjmisc)
+        word_length <- length(solution)
+        text_feedback <- rep("-", word_length)
+        for( i in 1: word_length){
+          text_feedback [i] <- case_when(
+            guess[i] == solution[i] ~ "*",
+            guess[i] %in% solution & guess[i] != solution[i] ~ "+",
+            guess[i] %nin% solution ~ "-"
+          )
+    }
+    return(text_feedback)
+}
+          
+play_wordle <- function(solution, valid_list,num_guesses = 6){
+      library(tidyverse)
+      library(sjmisc)
+      word_length <- length(solution)
+      print("Welcome to R-Wordle. You have 6 chances to guess the hidden 5 letter word. Good luck!")
+      print("Available Letters:")
+      letters_left <- LETTERS
+      print(letters_left)
+      
+      guess_history <- data.frame(matrix(nrow = word_length, ncol= num_guesses))
+      feedback_history <- data.frame(matrix(nrow = word_length, ncol= num_guesses))
+      
+      for(i in 1:num_guesses){
+        guess <- readline("Please input your word guess, then press return/enter to submit your guess: ")%>%
+          toupper()
+        while(nchar(guess) > word_length | toupper(guess) %nin% valid_list){
+          print("Oh no! :/ Your guess is incorrect, please input another guess.")
+            guess <- readline("Please input another guess: ")%>%
+              toupper()
+          }
+        guess <- strsplit(guess, split = "")[[1]]
+        print(guess) 
+        guess_history[,i] <- guess
+        feedback <- evaluate_guess(guess,solution)
+        feedback_history[,i] <- feedback
+        print("Available Letters:")
+        letters_left <- setdiff(letters_left, guess)
+        print(letters_left)
+        print(feedback)
+        
+        if(setequal(feedback, rep("*", word_length))){
+          print("Congratulations! You won the Wordle!")
+          print(guess_history)
+          return(feedback_history)
+        }
+      }
+      
+      print("Sorry! :/ Your guesses were incorrect, you have run out of chances.")
+      print(feedback_history)
+      print(guess_history)
+}
+       play_wordle(solution, valid_list, num_guesses = 6)
+```
+```
+
+
