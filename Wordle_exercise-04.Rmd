@@ -61,7 +61,7 @@ pick_solution <- function(solution_list1, word_length = 5){
   return(word)
 }
 
-solution <- pick_solution(solution_list, word_length = 5)
+solution <- pick_solution(solution_list1, word_length = 5)
 ```
 
 step 4: lets play wordle
